@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
 
+  <!-- Important for phones -->
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
   >
 
-  <title>Wild Shaale Speech Input</title>
+  <title>Wild Shaale Speech</title>
 
   <style>
     * {
@@ -19,101 +20,113 @@
       margin: 0;
       padding: 20px;
       font-family: Arial, sans-serif;
-      background: #f5f7f6;
+      background: #f5f7f5;
       color: #222;
     }
 
     .container {
       max-width: 600px;
-      margin: auto;
+      margin: 0 auto;
       background: white;
-      padding: 24px;
-      border-radius: 18px;
-      box-shadow: 0 3px 15px rgba(0,0,0,0.12);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.10);
     }
 
     h1 {
       margin-top: 0;
-      font-size: 25px;
       text-align: center;
-      color: #176b3a;
+      font-size: 24px;
     }
 
     .question {
-      background: #eef7f0;
-      padding: 16px;
-      border-radius: 12px;
+      background: #f1f5f1;
+      padding: 14px;
+      border-radius: 10px;
       margin-bottom: 18px;
-      font-size: 18px;
-      line-height: 1.45;
+      line-height: 1.5;
     }
 
-    #status {
-      text-align: center;
+    .question-label {
       font-weight: bold;
-      margin: 18px 0;
-      min-height: 24px;
+      margin-bottom: 5px;
     }
 
     #transcript {
       width: 100%;
-      min-height: 150px;
-      padding: 14px;
-      font-size: 18px;
-      border: 2px solid #bbb;
-      border-radius: 12px;
+      min-height: 180px;
       resize: vertical;
+      padding: 14px;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      font-size: 18px;
+      line-height: 1.5;
       font-family: Arial, sans-serif;
+    }
+
+    #transcript:focus {
+      outline: none;
+      border-color: #555;
+    }
+
+    .status {
+      text-align: center;
+      margin: 15px 0;
+      min-height: 24px;
+      font-weight: bold;
+    }
+
+    .recording {
+      color: #c62828;
+    }
+
+    .ready {
+      color: #2e7d32;
     }
 
     button {
       width: 100%;
+      padding: 16px;
+      margin-top: 10px;
       border: none;
-      border-radius: 12px;
-      padding: 17px;
-      margin-top: 12px;
-      font-size: 18px;
+      border-radius: 10px;
+      font-size: 17px;
       font-weight: bold;
       cursor: pointer;
     }
 
     #startBtn {
-      background: #176b3a;
+      background: #2e7d32;
       color: white;
     }
 
     #stopBtn {
-      background: #b3261e;
+      background: #c62828;
       color: white;
-      display: none;
-    }
-
-    #sendBtn {
-      background: #176b3a;
-      color: white;
-      display: none;
     }
 
     #againBtn {
-      background: #e6e6e6;
-      color: #222;
-      display: none;
+      background: #757575;
+      color: white;
+    }
+
+    #useBtn {
+      background: #1565c0;
+      color: white;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .info {
-      text-align: center;
-      color: #666;
-      font-size: 14px;
       margin-top: 15px;
-      line-height: 1.4;
-    }
-
-    .success {
-      color: #176b3a;
-    }
-
-    .error {
-      color: #b3261e;
+      padding: 12px;
+      background: #fff8e1;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
     }
   </style>
 </head>
@@ -122,14 +135,11 @@
 
 <div class="container">
 
-  <h1>🎤 Speech Input</h1>
+  <h1>🎤 Wild Shaale Speech</h1>
 
-  <div id="question" class="question">
-    Speak your answer below.
-  </div>
-
-  <div id="status">
-    Ready
+  <div class="question">
+    <div class="question-label">Question:</div>
+    <div id="questionText">Loading...</div>
   </div>
 
   <textarea
@@ -137,11 +147,15 @@
     placeholder="Your spoken answer will appear here..."
   ></textarea>
 
+  <div id="status" class="status">
+    Ready to speak
+  </div>
+
   <button id="startBtn">
     🎤 Start Speaking
   </button>
 
-  <button id="stopBtn">
+  <button id="stopBtn" disabled>
     ⏹ Stop
   </button>
 
@@ -149,33 +163,46 @@
     🔄 Record Again
   </button>
 
-  <button id="sendBtn">
+  <button id="useBtn">
     ✅ Use This Answer
   </button>
 
   <div class="info">
-    Speak clearly in English.<br>
-    You can edit the answer before sending it.
+    <b>How to use:</b><br>
+    1. Tap <b>Start Speaking</b>.<br>
+    2. Speak normally.<br>
+    3. Tap <b>Stop</b> when finished.<br>
+    4. Check and edit the text if needed.<br>
+    5. Tap <b>Use This Answer</b>.
   </div>
 
 </div>
 
+
 <script>
+
+  /* =========================================================
+     GET QUESTION / TARGET FROM MAIN APPS SCRIPT PAGE
+     ========================================================= */
 
   const params = new URLSearchParams(window.location.search);
 
   const target = params.get("target") || "";
+  const question = params.get("question") || "";
 
-  const questionText =
-    params.get("question") || "Speak your answer below.";
+  document.getElementById("questionText").textContent =
+    question || "Speak your answer";
 
-  const questionElement =
-    document.getElementById("question");
 
-  const statusElement =
-    document.getElementById("status");
+  /* =========================================================
+     SPEECH RECOGNITION
+     ========================================================= */
 
-  const transcriptElement =
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  const transcriptBox =
     document.getElementById("transcript");
 
   const startBtn =
@@ -187,167 +214,253 @@
   const againBtn =
     document.getElementById("againBtn");
 
-  const sendBtn =
-    document.getElementById("sendBtn");
+  const useBtn =
+    document.getElementById("useBtn");
 
-
-  questionElement.textContent = questionText;
-
-
-  // --------------------------------------------------
-  // CHECK SPEECH RECOGNITION SUPPORT
-  // --------------------------------------------------
-
-  const SpeechRecognition =
-    window.SpeechRecognition ||
-    window.webkitSpeechRecognition;
-
-
-  if (!SpeechRecognition) {
-
-    statusElement.textContent =
-      "❌ Speech recognition is not supported in this browser.";
-
-    statusElement.className = "error";
-
-    startBtn.disabled = true;
-
-  }
+  const status =
+    document.getElementById("status");
 
 
   let recognition = null;
 
-  let finalTranscript = "";
-
   let isRecording = false;
 
+  /*
+   * We keep the final transcript ourselves.
+   *
+   * IMPORTANT:
+   * We DO NOT append interim results.
+   * This prevents the repeated-text problem on phones.
+   */
+  let finalTranscript = "";
 
-  // --------------------------------------------------
-  // START RECOGNITION
-  // --------------------------------------------------
 
-  function startRecognition() {
+  /* =========================================================
+     CHECK BROWSER SUPPORT
+     ========================================================= */
 
-    if (!SpeechRecognition) {
-      return;
-    }
+  if (!SpeechRecognition) {
 
-    finalTranscript = "";
+    status.textContent =
+      "❌ Speech recognition is not supported in this browser.";
 
-    transcriptElement.value = "";
+    status.className = "status";
 
-    recognition =
-      new SpeechRecognition();
+    startBtn.disabled = true;
 
+  } else {
+
+    setupRecognition();
+
+  }
+
+
+  /* =========================================================
+     SETUP SPEECH RECOGNITION
+     ========================================================= */
+
+  function setupRecognition() {
+
+    recognition = new SpeechRecognition();
+
+    /*
+     * IMPORTANT:
+     *
+     * continuous = false
+     *
+     * This is intentional.
+     *
+     * On mobile browsers, continuous recognition can produce
+     * overlapping results and repeated sentences.
+     */
+    recognition.continuous = false;
+
+    /*
+     * We only need final results.
+     */
+    recognition.interimResults = false;
+
+    /*
+     * Indian English.
+     */
     recognition.lang = "en-IN";
 
-    recognition.continuous = true;
-
-    recognition.interimResults = true;
-
+    /*
+     * We want one clean result.
+     */
     recognition.maxAlternatives = 1;
 
 
-    recognition.onstart = function() {
-
-      isRecording = true;
-
-      statusElement.textContent =
-        "🎤 Listening... Speak now";
-
-      statusElement.className = "";
-
-      startBtn.style.display = "none";
-
-      stopBtn.style.display = "block";
-
-      againBtn.style.display = "none";
-
-      sendBtn.style.display = "none";
-    };
-
+    /* =======================================================
+       SPEECH RESULT
+       ======================================================= */
 
     recognition.onresult = function(event) {
 
-      let interimTranscript = "";
+      let spokenText = "";
 
+      /*
+       * Read only final results.
+       */
       for (
         let i = event.resultIndex;
         i < event.results.length;
         i++
       ) {
 
-        const transcript =
-          event.results[i][0].transcript;
-
         if (event.results[i].isFinal) {
 
-          finalTranscript += transcript + " ";
+          const text =
+            event.results[i][0].transcript.trim();
 
-        } else {
-
-          interimTranscript += transcript;
-
+          if (text) {
+            spokenText +=
+              (spokenText ? " " : "") + text;
+          }
         }
       }
 
-      transcriptElement.value =
-        finalTranscript + interimTranscript;
-    };
 
+      if (spokenText) {
 
-    recognition.onerror = function(event) {
+        /*
+         * Since we are NOT using continuous recognition,
+         * this is a single final result.
+         *
+         * Replace the transcript rather than repeatedly
+         * appending the same browser result.
+         */
+        finalTranscript = spokenText.trim();
 
-      console.error(
-        "Speech recognition error:",
-        event.error
-      );
+        transcriptBox.value = finalTranscript;
 
-      isRecording = false;
+        status.textContent =
+          "✅ Speech captured. You can edit the answer.";
 
-      stopBtn.style.display = "none";
-
-      startBtn.style.display = "block";
-
-      if (event.error === "not-allowed") {
-
-        statusElement.textContent =
-          "❌ Microphone permission was denied.";
-
-      } else if (event.error === "no-speech") {
-
-        statusElement.textContent =
-          "⚠️ No speech detected. Please try again.";
-
-      } else {
-
-        statusElement.textContent =
-          "❌ Speech recognition error: " +
-          event.error;
+        status.className = "status ready";
       }
 
-      statusElement.className = "error";
     };
 
+
+    /* =======================================================
+       START
+       ======================================================= */
+
+    recognition.onstart = function() {
+
+      isRecording = true;
+
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+
+      status.textContent =
+        "🔴 Listening... Speak now.";
+
+      status.className =
+        "status recording";
+    };
+
+
+    /* =======================================================
+       END
+       ======================================================= */
 
     recognition.onend = function() {
 
       isRecording = false;
 
-      stopBtn.style.display = "none";
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
 
-      startBtn.style.display = "block";
+      /*
+       * Don't overwrite an existing answer.
+       */
+      if (transcriptBox.value.trim()) {
 
-      againBtn.style.display = "block";
+        status.textContent =
+          "✅ Recording stopped. Check your answer.";
 
-      sendBtn.style.display = "block";
+        status.className =
+          "status ready";
 
-      statusElement.textContent =
-        "✓ Recording stopped. Check your answer.";
+      } else {
 
-      statusElement.className = "success";
+        status.textContent =
+          "Ready to speak";
+
+        status.className =
+          "status";
+      }
+
     };
 
+
+    /* =======================================================
+       ERROR
+       ======================================================= */
+
+    recognition.onerror = function(event) {
+
+      isRecording = false;
+
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+
+      let message = "Speech recognition error.";
+
+      if (event.error === "not-allowed") {
+
+        message =
+          "❌ Microphone permission was denied. Please allow microphone access.";
+
+      } else if (event.error === "no-speech") {
+
+        message =
+          "⚠️ No speech detected. Please try again.";
+
+      } else if (event.error === "network") {
+
+        message =
+          "❌ Network error. Please check your internet connection.";
+
+      } else if (event.error === "aborted") {
+
+        message =
+          "Recording stopped.";
+
+      }
+
+      status.textContent = message;
+
+      status.className = "status";
+    };
+
+  }
+
+
+  /* =========================================================
+     START BUTTON
+     ========================================================= */
+
+  startBtn.addEventListener("click", function() {
+
+    if (!recognition) {
+      return;
+    }
+
+    /*
+     * Clear previous recording before starting.
+     */
+    finalTranscript = "";
+
+    transcriptBox.value = "";
+
+    status.textContent =
+      "Starting microphone...";
+
+    status.className =
+      "status";
 
     try {
 
@@ -355,150 +468,161 @@
 
     } catch (error) {
 
-      console.error(error);
+      /*
+       * Some mobile browsers throw an error if start()
+       * is called while recognition is already running.
+       */
+      console.log("Recognition start:", error);
 
-      statusElement.textContent =
-        "❌ Could not start microphone.";
-
-      statusElement.className = "error";
     }
 
-  }
+  });
 
 
-  // --------------------------------------------------
-  // STOP
-  // --------------------------------------------------
+  /* =========================================================
+     STOP BUTTON
+     ========================================================= */
 
-  function stopRecognition() {
+  stopBtn.addEventListener("click", function() {
 
-    if (recognition && isRecording) {
+    if (!recognition) {
+      return;
+    }
+
+    try {
 
       recognition.stop();
 
+    } catch (error) {
+
+      console.log("Recognition stop:", error);
+
     }
 
-  }
+  });
 
 
-  // --------------------------------------------------
-  // RECORD AGAIN
-  // --------------------------------------------------
+  /* =========================================================
+     RECORD AGAIN
+     ========================================================= */
 
-  function recordAgain() {
+  againBtn.addEventListener("click", function() {
 
-    transcriptElement.value = "";
-
+    /*
+     * Completely clear the previous answer.
+     */
     finalTranscript = "";
 
-    statusElement.textContent =
-      "Ready";
+    transcriptBox.value = "";
 
-    statusElement.className = "";
+    status.textContent =
+      "Ready to record again.";
 
-    startBtn.style.display = "block";
+    status.className =
+      "status";
 
-    stopBtn.style.display = "none";
+    /*
+     * Automatically start recording after pressing
+     * Record Again.
+     */
+    if (recognition) {
 
-    againBtn.style.display = "none";
+      setTimeout(function() {
 
-    sendBtn.style.display = "none";
-  }
+        try {
+
+          recognition.start();
+
+        } catch (error) {
+
+          console.log("Recognition restart:", error);
+
+        }
+
+      }, 150);
+
+    }
+
+  });
 
 
-  // --------------------------------------------------
-  // SEND TEXT BACK TO APPS SCRIPT
-  // --------------------------------------------------
+  /* =========================================================
+     USE THIS ANSWER
+     ========================================================= */
 
-  function sendAnswer() {
+  useBtn.addEventListener("click", function() {
 
-    const text =
-      transcriptElement.value.trim();
+    const answer =
+      transcriptBox.value.trim();
 
-    if (!text) {
+    if (!answer) {
 
-      statusElement.textContent =
-        "⚠️ Please speak or enter an answer first.";
+      status.textContent =
+        "⚠️ Please record or type an answer first.";
 
-      statusElement.className = "error";
+      status.className =
+        "status";
 
       return;
     }
 
 
-    if (
-      window.opener &&
-      !window.opener.closed
-    ) {
+    /*
+     * Send the final edited answer back to the
+     * Apps Script page.
+     */
+    if (window.opener) {
 
       window.opener.postMessage(
         {
           type: "wildShaaleSpeechResult",
-
           target: target,
-
-          text: text
+          text: answer
         },
-
         "*"
       );
 
+      status.textContent =
+        "✅ Answer sent back to the form.";
 
-      statusElement.textContent =
-        "✓ Answer sent. You can close this window.";
-
-      statusElement.className =
-        "success";
-
-
-      sendBtn.textContent =
-        "✓ Answer Sent";
+      status.className =
+        "status ready";
 
 
-      sendBtn.disabled = true;
-
-
+      /*
+       * Give the message a moment to reach the
+       * Apps Script page before closing.
+       */
       setTimeout(function() {
 
         window.close();
 
-      }, 700);
+      }, 300);
 
     } else {
 
-      statusElement.textContent =
-        "❌ The main Wild Shaale form is not available.";
+      status.textContent =
+        "⚠️ The main Wild Shaale form could not be found.";
 
-      statusElement.className =
-        "error";
     }
 
-  }
+  });
 
 
-  // --------------------------------------------------
-  // BUTTON EVENTS
-  // --------------------------------------------------
+  /* =========================================================
+     PREVENT ACCIDENTAL PAGE CLOSING WHILE RECORDING
+     ========================================================= */
 
-  startBtn.addEventListener(
-    "click",
-    startRecognition
-  );
+  window.addEventListener("beforeunload", function(event) {
 
-  stopBtn.addEventListener(
-    "click",
-    stopRecognition
-  );
+    if (isRecording) {
 
-  againBtn.addEventListener(
-    "click",
-    recordAgain
-  );
+      event.preventDefault();
+      event.returnValue = "";
 
-  sendBtn.addEventListener(
-    "click",
-    sendAnswer
-  );
+    }
+
+  });
 
 </script>
 
